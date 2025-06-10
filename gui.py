@@ -1,7 +1,6 @@
 import streamlit as st
 from hide import HideImage, HideAudio
 from unhide import UnhideImage, UnhideAudio
-from operations import *
 import os
 import cv2
 import wave
@@ -28,15 +27,27 @@ with st.chat_message("assistant"):
     process = st.radio("Choose an operation:", ["Hide a Message", "Unhide a Message"], index=None, key="main_op")
 
 # -------------------------------
-# Upload to Transfer.sh
+# Upload to GoFile.io
 # -------------------------------
-def upload_to_transfersh(file_path):
-    with open(file_path, 'rb') as f:
-        response = requests.put(f"https://transfer.sh/{os.path.basename(file_path)}", data=f)
-    if response.status_code == 200:
-        return response.text.strip()
-    else:
-        raise Exception(f"Upload failed: {response.text}")
+def upload_to_gofile(file_path):
+    """
+    Uploads a file to GoFile.io and returns the download URL.
+    """
+    upload_url = "https://api.gofile.io/uploadFile"
+    try:
+        with open(file_path, "rb") as f:
+            files = {"file": f}
+            response = requests.post(upload_url, files=files, timeout=15)
+        if response.status_code == 200:
+            json_response = response.json()
+            if json_response["status"] == "ok":
+                return json_response["data"]["downloadPage"]
+            else:
+                raise Exception(f"Upload failed: {json_response['status']}")
+        else:
+            raise Exception(f"HTTP error: {response.status_code}")
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Network error: {e}")
 
 # -------------------------------
 # Process Handler
@@ -92,7 +103,7 @@ if process:
                 with col2:
                     if st.button("📤 Generate Shareable Image URL"):
                         try:
-                            url = upload_to_transfersh(st.session_state["encoded_image_path"])
+                            url = upload_to_gofile(st.session_state["encoded_image_path"])
                             st.success("🌐 Public URL:")
                             st.code(url, language=None)
 
@@ -141,7 +152,7 @@ if process:
 
                                 if st.button("📤 Generate Shareable Audio URL"):
                                     try:
-                                        url = upload_to_transfersh(output_path)
+                                        url = upload_to_gofile(output_path)
                                         st.success("🌐 Public URL:")
                                         st.code(url, language=None)
 
