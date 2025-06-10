@@ -80,12 +80,19 @@ if process:
                                 st.image(output_path, caption="Stego Image (with hidden message)", use_container_width=True)
                                 with open(output_path, "rb") as f:
                                     st.download_button("⬇️ Download Encoded Image", f, file_name="stego_image.png")
-
                                 if st.button("📤 Generate Shareable Image URL"):
                                     try:
                                         url = upload_to_transfersh(output_path)
                                         st.success("🌐 Public URL:")
                                         st.code(url, language=None)
+                                
+                                        # Create a WhatsApp sharing link
+                                        whatsapp_message = f"Check out this image with a hidden message: {url}"
+                                        whatsapp_url = f"https://wa.me/?text={whatsapp_message.replace(' ', '%20')}"
+                                        
+                                        # Show share button
+                                        st.markdown(f"[📲 Share via WhatsApp]({whatsapp_url})", unsafe_allow_html=True)
+                                
                                     except Exception as e:
                                         st.error(f"❌ Failed to generate URL: {e}")
 
