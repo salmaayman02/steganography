@@ -54,6 +54,14 @@ if process:
                     st.subheader("✉️ Enter Your Secret Message")
                     message = st.text_area("Type the secret message:", height=150)
 
+                    # Show side-by-side images if encoded one already exists
+                    if "encoded_image_path" in st.session_state:
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.image(st.session_state["original_image_path"], caption="🔓 Original Image", use_container_width=True)
+                        with col_b:
+                            st.image(st.session_state["encoded_image_path"], caption="🔐 Encoded Image", use_container_width=True)
+
                     if st.button("🔒 Hide Message in Image"):
                         if not message:
                             st.warning("⚠️ Please enter a message.")
@@ -64,8 +72,16 @@ if process:
                                 stego = HideImage(str(st.session_state["original_image_path"]), str(output_path))
                                 stego.embed_text_pvd(message)
 
+                                st.session_state["encoded_image_path"] = output_path
+
                                 st.success("✅ Message embedded successfully!")
-                                st.image(str(output_path), caption="Stego Image", use_container_width=True)
+
+                                col_a, col_b = st.columns(2)
+                                with col_a:
+                                    st.image(st.session_state["original_image_path"], caption="🔓 Original Image", use_container_width=True)
+                                with col_b:
+                                    st.image(st.session_state["encoded_image_path"], caption="🔐 Encoded Image", use_container_width=True)
+
                                 with open(output_path, "rb") as f:
                                     st.download_button("⬇️ Download Encoded Image", f, file_name=filename)
 
