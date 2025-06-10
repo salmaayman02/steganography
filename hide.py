@@ -106,32 +106,6 @@ class HideImage:
         stego_image = Image.fromarray(pixels)
         stego_image.save(self.output_path)
 
-    # New method to calculate max letters that can be hidden using PVD
-    def calculate_max_letters_pvd(self):
-        image = Image.open(self.image_path)
-        pixels = np.array(image, dtype=np.int32)
-
-        if len(pixels.shape) == 2:  # Grayscale image
-            rows, cols = pixels.shape
-            channels = 1
-        else:
-            rows, cols, channels = pixels.shape
-
-        total_bits = 0
-
-        for channel in range(channels):
-            channel_data = pixels if channels == 1 else pixels[:, :, channel]
-
-            for row in range(rows):
-                for col in range(0, cols - 1, 2):
-                    p1 = channel_data[row, col]
-                    p2 = channel_data[row, col + 1]
-                    diff = abs(p1 - p2)
-                    total_bits += get_capacity(diff)
-
-        max_letters = total_bits // 8  # 8 bits per letter
-        return max_letters
-
 
 class HideAudio:
     def __init__(self, audio_path, output_path):
