@@ -28,23 +28,15 @@ with st.chat_message("assistant"):
     process = st.radio("Choose an operation:", ["Hide a Message", "Unhide a Message"], index=None, key="main_op")
 
 # -------------------------------
-# Upload to GoFile.io
+# Upload to Transfer.sh
 # -------------------------------
-def upload_to_gofile(file_path):
-    """
-    Upload a file to GoFile.io and return the public download URL.
-    """
+def upload_to_transfersh(file_path):
     with open(file_path, 'rb') as f:
-        response = requests.post("https://api.gofile.io/uploadFile", files={"file": f})
-
+        response = requests.put(f"https://transfer.sh/{os.path.basename(file_path)}", data=f)
     if response.status_code == 200:
-        res_json = response.json()
-        if res_json["status"] == "ok":
-            return res_json['data']['downloadPage']
-        else:
-            raise Exception(f"GoFile upload failed: {res_json}")
+        return response.text.strip()
     else:
-        raise Exception(f"HTTP error: {response.status_code} - {response.text}")
+        raise Exception(f"Upload failed: {response.text}")
 
 # -------------------------------
 # Process Handler
@@ -88,10 +80,10 @@ if process:
                                 st.image(output_path, caption="Stego Image (with hidden message)", use_container_width=True)
                                 with open(output_path, "rb") as f:
                                     st.download_button("⬇️ Download Encoded Image", f, file_name="stego_image.png")
-
+                                
                                 if st.button("📤 Generate Shareable Image URL"):
                                     try:
-                                        url = upload_to_gofile(output_path)
+                                        url = upload_to_transfersh(output_path)
                                         st.success("🌐 Public URL:")
                                         st.code(url, language=None)
 
@@ -101,7 +93,6 @@ if process:
 
                                     except Exception as e:
                                         st.error(f"❌ Failed to generate URL: {e}")
-
                             except Exception as e:
                                 st.error(f"❌ An error occurred during encoding: {e}")
                         else:
@@ -141,7 +132,7 @@ if process:
 
                                 if st.button("📤 Generate Shareable Audio URL"):
                                     try:
-                                        url = upload_to_gofile(output_path)
+                                        url = upload_to_transfersh(output_path)
                                         st.success("🌐 Public URL:")
                                         st.code(url, language=None)
 
@@ -151,7 +142,6 @@ if process:
 
                                     except Exception as e:
                                         st.error(f"❌ Failed to generate URL: {e}")
-
                             except Exception as e:
                                 st.error(f"❌ An error occurred during encoding: {e}")
                         else:
