@@ -61,10 +61,10 @@ if process:
                 original_path = "temp_uploaded_image.png"
                 with open(original_path, "wb") as f:
                     f.write(uploaded_img.getbuffer())
+                st.session_state["original_image_path"] = original_path
+                st.image(original_path, caption="Original Image", use_container_width=True)
 
-                with col1:
-                    st.image(original_path, caption="Original Image", use_container_width=True)
-
+            if "original_image_path" in st.session_state:
                 with col2:
                     st.subheader("✉️ Enter Your Secret Message")
                     message = st.text_area("Type the secret message:", height=150, key="msg_hide_img")
@@ -73,30 +73,37 @@ if process:
                         if message:
                             output_path = "encoded_image.png"
                             try:
-                                stego_img = HideImage(original_path, output_path)
+                                stego_img = HideImage(st.session_state["original_image_path"], output_path)
                                 stego_img.embed_text_pvd(message)
+
+                                st.session_state["encoded_image_path"] = output_path
                                 st.success("✅ Message embedded successfully!")
 
                                 st.image(output_path, caption="Stego Image (with hidden message)", use_container_width=True)
+
                                 with open(output_path, "rb") as f:
                                     st.download_button("⬇️ Download Encoded Image", f, file_name="stego_image.png")
-                                
-                                if st.button("📤 Generate Shareable Image URL"):
-                                    try:
-                                        url = upload_to_transfersh(output_path)
-                                        st.success("🌐 Public URL:")
-                                        st.code(url, language=None)
-
-                                        whatsapp_message = f"Check out this image with a hidden message: {url}"
-                                        whatsapp_url = f"https://wa.me/?text={whatsapp_message.replace(' ', '%20')}"
-                                        st.markdown(f"[📲 Share via WhatsApp]({whatsapp_url})", unsafe_allow_html=True)
-
-                                    except Exception as e:
-                                        st.error(f"❌ Failed to generate URL: {e}")
                             except Exception as e:
                                 st.error(f"❌ An error occurred during encoding: {e}")
                         else:
                             st.warning("⚠️ Please enter a message to hide.")
+
+            if "encoded_image_path" in st.session_state:
+                with col2:
+                    if st.button("📤 Generate Shareable Image URL"):
+                        try:
+                            url = upload_to_transfersh(st.session_state["encoded_image_path"])
+                            st.success("🌐 Public URL:")
+                            st.code(url, language=None)
+
+                            whatsapp_message = f"Check out this image with a hidden message: {url}"
+                            whatsapp_url = f"https://wa.me/?text={whatsapp_message.replace(' ', '%20')}"
+                            st.markdown(f"[📲 Share via WhatsApp]({whatsapp_url})", unsafe_allow_html=True)
+
+                            st.image(st.session_state["encoded_image_path"], caption="Stego Image (still available)", use_container_width=True)
+
+                        except Exception as e:
+                            st.error(f"❌ Failed to generate URL: {e}")
 
         elif media_type == "Audio":
             with col1:
@@ -108,9 +115,10 @@ if process:
                 with open(original_audio_path, "wb") as f:
                     f.write(uploaded_audio.getbuffer())
 
-                with col1:
-                    st.audio(original_audio_path, format="audio/wav")
+                st.session_state["original_audio_path"] = original_audio_path
+                st.audio(original_audio_path, format="audio/wav")
 
+            if "original_audio_path" in st.session_state:
                 with col2:
                     st.subheader("✉️ Enter Your Secret Message")
 
@@ -123,8 +131,9 @@ if process:
                         if message:
                             output_path = "encoded_audio.wav"
                             try:
-                                stego_audio = HideAudio(original_audio_path, output_path)
+                                stego_audio = HideAudio(st.session_state["original_audio_path"], output_path)
                                 stego_audio.embed_text_lsb(message)
+                                st.session_state["encoded_audio_path"] = output_path
                                 st.success("✅ Message successfully embedded into the audio.")
 
                                 st.subheader("🔬 Waveform Comparison")
