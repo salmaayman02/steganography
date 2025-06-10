@@ -1,12 +1,7 @@
 import streamlit as st
 from hide import HideImage, HideAudio
 from unhide import UnhideImage, UnhideAudio
-from operations import *
 import os
-import cv2
-import wave
-import numpy as np
-import matplotlib.pyplot as plt
 
 # -------------------------------
 # Configuration
@@ -16,15 +11,15 @@ st.set_page_config(page_title="Steganography Assistant", layout="wide")
 # -------------------------------
 # Title and Branding
 # -------------------------------
-st.title("\ud83d\udd10 Steganography Assistant")
+st.title("🔐 Steganography Assistant")
 st.caption("Securely hide and reveal messages in image or audio files using steganography.")
 
 # -------------------------------
 # Chat Start
 # -------------------------------
 with st.chat_message("assistant"):
-    st.write("Hi there! \ud83d\udc4b How can I assist you today?")
-    process = st.radio("Choose an operation:", ["Hide a Message", "Unhide a Message"], index=None, key="main_op")
+    st.write("Hi there! 👋 How can I assist you today?")
+    process = st.radio("Choose an operation:", ["Hide a Message", "Unhide a Message"], index=None)
 
 # -------------------------------
 # Process Handler
@@ -37,152 +32,153 @@ if process:
 
     if process == "Hide a Message":
         with col1:
-            st.subheader("\ud83d\udcc1 Select Media Type")
-            media_type = st.radio("Choose where to hide the message:", ["Image", "Audio"], index=None, key="media_type_hide")
+            st.subheader("📁 Select Data Type")
+            media_type = st.radio("Choose where to hide the message:", ["Image", "Audio"], index=None)
 
         if media_type == "Image":
             with col1:
-                st.subheader("\ud83d\uddbc\ufe0f Upload an Image File")
-                uploaded_img = st.file_uploader("Supported formats: PNG (recommended), JPG", type=["png", "jpg", "jpeg"], key="img_uploader_hide")
+                st.subheader("🖼️ Upload an Image File")
+                uploaded_img = st.file_uploader("Supported formats: PNG, JPG, JPEG", type=["png", "jpg", "jpeg"])
 
             if uploaded_img:
+                # Save the uploaded image temporarily to disk for capacity calculation and processing
                 original_path = "temp_uploaded_image.png"
                 with open(original_path, "wb") as f:
                     f.write(uploaded_img.getbuffer())
-
-                with col1:
-                    st.image(original_path, caption="Original Image", use_container_width=True)
-                    capacity = max_capacity_image(original_path)
-                    st.info(f"Estimated capacity: ~{capacity} characters.")
-
                 with col2:
-                    st.subheader("\u2709\ufe0f Enter Your Secret Message")
-                    message = st.text_area("Type the secret message:", height=150, key="msg_hide_img")
-
+                    message = st.text_area(f"Type the secret message:", height=120)
+                    output_path = "encoded_image.png"
                     if st.button("Hide Message in Image"):
-                        if message:
-                            output_path = "encoded_image.png"
-                            try:
-                                stego_img = HideImage(original_path, output_path)
-                                stego_img.embed_text_pvd(message)
 
-                                st.session_state["original_image_path"] = original_path
-                                st.session_state["encoded_image_path"] = output_path
-
-                                st.success("\u2705 Message embedded successfully!")
-
-                                st.subheader("\ud83d\uddbc\ufe0f Original vs Encoded Image Comparison")
-                                col_a, col_b = st.columns(2)
-                                with col_a:
-                                    st.image(st.session_state["original_image_path"], caption="\ud83d\udd13 Original Image", use_container_width=True)
-                                with col_b:
-                                    st.image(st.session_state["encoded_image_path"], caption="\ud83d\udd10 Encoded Image", use_container_width=True)
-
-                                with open(output_path, "rb") as f:
-                                    st.download_button("\u2b07\ufe0f Download Encoded Image", f, file_name="stego_image.png")
-
-                                st.info(f"\ud83d\udcc1 Encoded image has been saved to: `{output_path}`")
-                                st.subheader("\ud83d\udcf2 Share Manually")
+                        try:
+                            stego_img = HideImage(original_path, output_path)
+                            stego_img.embed_text_pvd(message)
+                            st.success("✅ Message embedded successfully.")
+                            # Show original and stego images side by side
+                            img_col1, img_col2 = st.columns(2)
+                            with img_col1:
+                                st.image(original_path, caption="Original Image", use_column_width=True)
+                            with img_col2:
+                                st.image(output_path, caption="Stego Image", use_column_width=True)
+                            with open(output_path, "rb") as f:
+                                st.download_button("⬇️ Download Encoded Image", f, file_name="stego_image.png")
+                            st.caption("💾 The file will be saved to your **Downloads** folder as `stego_image.png` after clicking the button.")
+                            # Sharing section
+                            st.subheader("📤 Share with Friends")
+                            col_share1, col_share2 = st.columns(2)
+                            with col_share1:
                                 st.markdown(
-                                    "After downloading the file, you can manually share it via WhatsApp.\n\n"
-                                    "[\ud83d\udd17 Open WhatsApp](https://wa.me/) and attach the saved image manually from your Downloads folder.",
+                                    "[📱 Share via WhatsApp](https://wa.me/?text=Hey!%20Check%20out%20this%20encoded%20audio%20file%20I%20created.%20You'll%20find%20it%20in%20the%20Downloads%20folder!)",
+                                    unsafe_allow_html=True
+                                )
+                            with col_share2:
+                                st.markdown(
+                                    "[📧 Share via Gmail](https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Encoded%20Audio%20File&body=Hey!%20I'm%20sharing%20an%20encoded%20audio%20file.%20You%20can%20find%20it%20in%20the%20Downloads%20folder%20after%20downloading%20from%20the%20tool.)",
                                     unsafe_allow_html=True
                                 )
 
-                            except Exception as e:
-                                st.error(f"\u274c An error occurred during encoding: {e}")
-                                st.warning("The message might be too long for this image. Try a shorter message or a larger image.")
-                        else:
-                            st.warning("\u26a0\ufe0f Please enter a message to hide.")
+                        except Exception as e:
+                            st.error(f"❌ An error occurred during encoding: {e}")
 
         elif media_type == "Audio":
             with col1:
-                st.subheader("\ud83c\udfa7 Upload an Audio File")
-                uploaded_audio = st.file_uploader("Supported formats: WAV (recommended)", type=["wav"], key="audio_uploader_hide")
-
-            if 'char_count_audio' not in st.session_state:
-                st.session_state.char_count_audio = 0
+                st.subheader("🎧 Upload an Audio File")
+                uploaded_audio = st.file_uploader("Supported formats: WAV (recommended)", type=["wav", "mp3", "ogg"])
 
             if uploaded_audio:
+                # Save the uploaded audio temporarily to disk for capacity calculation and processing
                 original_audio_path = "temp_uploaded_audio.wav"
                 with open(original_audio_path, "wb") as f:
                     f.write(uploaded_audio.getbuffer())
 
-                with col1:
-                    st.audio(original_audio_path, format="audio/wav")
-                    capacity = max_capacity_audio(original_audio_path)
-                    st.info(f"File capacity: ~{capacity} characters.")
+
 
                 with col2:
-                    st.subheader("\u2709\ufe0f Enter Your Secret Message")
-                    counter_placeholder = st.empty()
+                    st.subheader("✉️ Enter Your Secret Message")
+                    message = st.text_area(f"Type the secret message:", height=120)
 
-                    def update_audio_count():
-                        st.session_state.char_count_audio = len(st.session_state.msg_hide_audio)
-
-                    message = st.text_area("Type the secret message:", height=150, key="msg_hide_audio", on_change=update_audio_count)
-
-                    with counter_placeholder:
-                        count = st.session_state.char_count_audio
-                        if capacity > 0:
-                            if count <= capacity:
-                                st.caption(f"**{count}/{capacity}** characters")
-                            else:
-                                st.caption(f":red[**{count}/{capacity}** characters - Too long!]")
-
+                    output_path = "encoded_audio.wav"
                     if st.button("Hide Message in Audio"):
-                        if message:
-                            output_path = "encoded_audio.wav"
-                            try:
-                                stego_audio = HideAudio(original_audio_path, output_path)
-                                stego_audio.embed_text_lsb(message)
-                                st.success("\u2705 Message successfully embedded into the audio.")
-                                st.audio(output_path, format="audio/wav")
-                            except Exception as e:
-                                st.error(f"\u274c An error occurred during encoding: {e}")
-                                st.warning("The message might be too long for this audio file. Try a shorter message or a longer audio file.")
-                        else:
-                            st.warning("\u26a0\ufe0f Please enter a message to hide.")
 
+                        try:
+                            stego_audio = HideAudio(original_audio_path, output_path)
+                            stego_audio.embed_text_lsb(message)
+                            st.success("✅ Message successfully embedded into the audio.")
+                            st.audio(output_path, format="audio/wav")
+                            with open(output_path, "rb") as f:
+                                st.download_button("⬇️ Download Encoded Audio", f, file_name="stego_audio.wav")
+                            st.caption("💾 The file will be saved to your **Downloads** folder as `stego_audio.wav` after clicking the button.")
+                        except Exception as e:
+                            st.error(f"❌ An error occurred during encoding: {e}")
+                        # Sharing section
+                        st.subheader("📤 Share with Friends")
+                        col_share1, col_share2 = st.columns(2)
+                        with col_share1:
+                            st.markdown(
+                                "[📱 Share via WhatsApp](https://wa.me/?text=Hey!%20Check%20out%20this%20encoded%20audio%20file%20I%20created.%20You'll%20find%20it%20in%20the%20Downloads%20folder!)",
+                                unsafe_allow_html=True
+                            )
+                        with col_share2:
+                            st.markdown(
+                                "[📧 Share via Gmail](https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=Encoded%20Audio%20File&body=Hey!%20I'm%20sharing%20an%20encoded%20audio%20file.%20You%20can%20find%20it%20in%20the%20Downloads%20folder%20after%20downloading%20from%20the%20tool.)",
+                                unsafe_allow_html=True
+                            )
+
+    # Unhide message code stays the same
     elif process == "Unhide a Message":
         with col1:
-            st.subheader("\ud83d\udcc1 Select Media Type")
-            media_type = st.radio("Choose file type to extract message from:", ["Image", "Audio"], index=None, key="media_type_unhide")
+            st.subheader("📁 Select Data Type")
+            media_type = st.radio("Choose file type to extract message from:", ["Image", "Audio"], index=None)
 
         if media_type == "Image":
             with col2:
-                st.subheader("\ud83d\uddbc\ufe0f Upload Stego Image File")
-                uploaded_img = st.file_uploader("Upload the image containing a hidden message", type=["png", "jpg", "jpeg"], key="img_uploader_unhide")
+                st.subheader("🖼️ Upload Image File")
+                uploaded_img = st.file_uploader("Supported formats: PNG, JPG, JPEG", type=["png", "jpg", "jpeg"])
 
                 if uploaded_img:
-                    st.image(uploaded_img, caption="Uploaded Image", use_container_width=True)
-
+                    st.success("✅ Image uploaded successfully.")
+                    st.image(uploaded_img, caption="Uploaded Image", use_column_width=True)
                     if st.button("Reveal Message from Image"):
                         try:
                             extract_img = UnhideImage(uploaded_img)
                             hidden_message = extract_img.extract_text_pvd()
+
                             with st.chat_message("assistant"):
-                                st.subheader("\ud83d\udd75\ufe0f Extracted Message")
-                                st.code(hidden_message, language=None)
+                                st.subheader("🕵️ Extracted Message")
+                                num_lines = hidden_message.count('\n') + 1
+                                dynamic_height = min(500, max(100, num_lines * 20))
+                                st.text_area("Hidden message:", value=hidden_message, height=dynamic_height, disabled=True)
                         except Exception as e:
-                            st.error(f"\u274c Failed to extract message: {e}")
-                            st.info("This could happen if no message is hidden, the file is corrupted, or the wrong method is used.")
+                            st.error(f"❌ Failed to extract message: {e}")
 
         elif media_type == "Audio":
             with col2:
-                st.subheader("\ud83c\udfa7 Upload Stego Audio File")
-                uploaded_audio = st.file_uploader("Upload the audio file containing a hidden message", type=["wav"], key="audio_uploader_unhide")
+                st.subheader("🎧 Upload Audio File")
+                uploaded_audio = st.file_uploader("Supported formats: MP3, WAV, OGG", type=["mp3", "wav", "ogg"])
 
                 if uploaded_audio:
-                    st.audio(uploaded_audio)
-
+                    st.success("✅ Audio uploaded successfully.")
+                    st.audio(uploaded_audio, format="audio/wav")
                     if st.button("Reveal Message from Audio"):
+
+
                         try:
                             extract_audio = UnhideAudio(uploaded_audio)
                             hidden_message = extract_audio.extract_text_lsb()
+
                             with st.chat_message("assistant"):
-                                st.subheader("\ud83d\udd75\ufe0f Extracted Message")
-                                st.text_area("Hidden message:", value=hidden_message, height=100, disabled=True)
+                                st.subheader("🕵️ Extracted Message")
+                                num_lines = hidden_message.count('\n') + 1
+                                dynamic_height = min(500, max(100, num_lines * 20))
+                                st.text_area("Hidden message:", value=hidden_message, height=dynamic_height, disabled=True)
                         except Exception as e:
-                            st.error(f"\u274c Failed to extract message: {e}")
-                            st.info("This could happen if no message is hidden, the file is corrupted, or the wrong method is used.")
+                            st.error(f"❌ Failed to extract message: {e}")
+
+# -------------------------------
+# Footer and Notes
+# -------------------------------
+st.info(
+    "💡 **Note**: The size and resolution of your file significantly affect how much data can be hidden. "
+    "For **very small images**, the encoder might not be able to embed the entire message properly, "
+    "and the decoder may fail to extract it accurately. Consider using higher-resolution images for better results."
+)
