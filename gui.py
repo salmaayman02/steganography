@@ -42,6 +42,10 @@ if process:
                 st.subheader("🖼️ Upload an Image File")
                 uploaded_img = st.file_uploader("Supported formats: PNG (recommended), JPG", type=["png", "jpg", "jpeg"])
 
+            if uploaded_img:
+                original_path = DOWNLOADS_DIR / f"temp_uploaded_{uuid.uuid4().hex}.png"
+                st.session_state["original_image_path"] = original_path
+                st.image(original_path, caption="Original Image", use_container_width=True)
 
             if "original_image_path" in st.session_state:
                 with col2:
